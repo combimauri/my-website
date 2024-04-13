@@ -1,15 +1,15 @@
 ---
 author: Mauricio Arce Torrez
 pubDatetime: 2024-04-12T07:02:00Z
-modDatetime: 2024-04-12T07:02:00Z
-title: Angular + Gemini
+modDatetime: 2024-04-13T18:00:00Z
+title: Angular + Gemini Pro (Primera parte)
 slug: angular-gemini-first-part
 featured: true
 draft: false
 tags:
   - angular
   - gemini
-description: Una introducción a la integración de Gemini en nuestras aplicaciones Angular.
+description: Una introducción a la integración de Gemini en nuestras aplicaciones Angular usando texto.
 ---
 
 ## Integrando Angular y Gemini
@@ -62,7 +62,9 @@ readonly #model = this.#genAI.getGenerativeModel({ model: 'gemini-pro' });
 ```
 
 La *API key* veremos cómo obtenerla en el siguiente paso.
+
 *#genAI* es una propiedad privada que contiene una instancia de la librería.
+
 *#model* es una instancia del modelo, el mismo está usando *gemini-pro*, el cual es el modelo para entradas de solo texto. Puedes ver las diferentes variaciones de modelos [aquí](https://ai.google.dev/models/gemini?hl=es-419).
 
 También debemos implementar una función que se encargue de enviar prompts a nuestro modelo para generar contenido:
@@ -112,9 +114,38 @@ Accede a [Google AI Studio](https://aistudio.google.com/app/apikey) y crea una n
 
 Reemplaza la key que obtuviste en la propiedad del servicio creado en el anterior paso. Toma en cuenta que el código con tu key no debería ser publicado, solo lo estamos agregando de forma directa en el código para desarrollo local.
 
-5. **Actualiza el app.component**
+5. **Crear el chat.component**
 
-Debemos actualizar el template y el componente `app.component` para poder mandar los prompts.
+Nos crearemos un componente llamado `chat` para interactuar con el modelo de Gemini. Para ello corremos el siguiente comando:
+
+```bash
+ng generate component chat
+```
+
+Lo siguiente es crear una ruta para nuestro componente en el archivo `app.routes.ts` y asegurarnos de redirigir a ella:
+
+```typescript
+export const routes: Routes = [
+  {
+    path: '',
+    redirectTo: 'chat',
+    pathMatch: 'full',
+  },
+  {
+    path: 'chat',
+    loadComponent: () => import('./chat/chat.component').then(c => c.ChatComponent),
+  },
+];
+```
+
+También tenemos que actualizar el app.component.html para que cargue las rutas:
+
+```html
+<router-outlet />
+```
+
+
+Debemos actualizar el template y el componente `chat.component` para poder mandar los prompts.
 
 La lógica del componente necesita propiedades para almacenar la respuesta de Gemini y una función que utilice el servicio para poder mandar el prompt.
 
@@ -129,14 +160,14 @@ Mientras que nuestra función podría lucir así:
 ```typescript
 readonly #geminiService = inject(GeminiService);
 
-sendPrompt(prompt: string): void {
+sendTextMessage(prompt: string): void {
   this.#geminiService
     .sendPrompt(prompt)
     .then((response) => this.response.set(response));
 }
 ```
 
-Ahora, necesitamos renderizar la repuesta de Gemini en nuestro template (app.component.html):
+Ahora, necesitamos renderizar la repuesta de Gemini en nuestro template (chat.component.html):
 
 ```html
 <p>
@@ -144,18 +175,18 @@ Ahora, necesitamos renderizar la repuesta de Gemini en nuestro template (app.com
 </p>
 ```
 
-También debemos agregar un campo de texto que llame a nuestra función `sendPrompt` cada que presionemos la tecla "Enter":
+También debemos agregar un campo de texto que llame a nuestra función `sendTextMessage` cada que presionemos la tecla "Enter":
 
 ```html
 <input
   #promptInput
   placeholder="Introduce una petición aquí"
   type="text"
-  (keyup.enter)="sendPrompt(promptInput.value)"
+  (keyup.enter)="sendTextMessage(promptInput.value)"
 />
 ```
 
-Después de estos cambios, nuestro archivo app.component.ts debería lucir así:
+Después de estos cambios, nuestro archivo chat.component.ts debería lucir así:
 
 ```typescript
 import {
@@ -175,11 +206,11 @@ import { GeminiService } from '../core/services/gemini.service';
   styleUrl: './chat.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class ChatComponent {
+export class ChatComponent {
   response = signal('');
   readonly #geminiService = inject(GeminiService);
 
-  sendPrompt(prompt: string): void {
+  sendTextMessage(prompt: string): void {
     this.#geminiService
       .sendPrompt(prompt)
       .then((response) => this.response.set(response));
@@ -187,7 +218,7 @@ export default class ChatComponent {
 }
 ```
 
-Y el archivo app.component.html así:
+Y el archivo chat.component.html así:
 
 ```html
 <p>
